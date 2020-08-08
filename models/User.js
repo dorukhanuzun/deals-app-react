@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-
 const UserSchema = new mongoose.Schema({
   firstName: {
     type: String,
@@ -20,6 +19,10 @@ const UserSchema = new mongoose.Schema({
       message: props => `${props.value} doesn't match the email confirmation`
     }
   }
+},{
+    toJSON: {
+      getters: true
+    }
 });
 
 

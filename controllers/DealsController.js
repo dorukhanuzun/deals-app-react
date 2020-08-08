@@ -19,6 +19,7 @@ const viewPath = 'deals';
 const Deal = require('../models/Deal');
 const User = require('../models/User');
 
+
 exports.index = async (req, res) => {
   try {
     const deals = await Deal
@@ -26,13 +27,9 @@ exports.index = async (req, res) => {
       .populate('user')
       .sort({createdAt: 'desc'});
 
-    res.render(`${viewPath}/index`, {
-      pageTitle: 'Deals',
-      deals: deals
-    });
+    res.status(200).json(deals);
   } catch (error) {
-    req.flash('danger', `There was an error displaying hot deals: ${error}`);
-    res.redirect('/');
+    res.status(400).json({message: 'There is an issue while fetching the deals', error});
   }
 };
 
@@ -40,13 +37,10 @@ exports.show = async (req, res) => {
   try {
     const deal = await Deal.findById(req.params.id)
       .populate('user');
-    res.render(`${viewPath}/show`, {
-      pageTitle: deal.title,
-      deal: deal
-    });
+    res.status(200).json(deal);
+    
   } catch (error) {
-    req.flash('danger', `There was an error displaying this deal: ${error}`);
-    res.redirect('/');
+    res.status(400).json({message: "There was an error displaying this deal"});
   }
 };
 
@@ -62,12 +56,9 @@ exports.create = async (req, res) => {
     const user = await User.findOne({email: email});
     const deal = await Deal.create({user: user._id, ...req.body});
 
-    req.flash('success', 'Deal created successfully');
-    res.redirect(`/deals/${deal.id}`);
+    res.status(200).json(deal);
   } catch (error) {
-    req.flash('danger', `There was an error creating this deal: ${error}`);
-    req.session.formData = req.body;
-    res.redirect('/deals/new');
+    res.status(400).json({message: "There was an error creating this deal"});
   }
 };
 
@@ -88,30 +79,27 @@ exports.update = async (req, res) => {
   try {
     const { user: email } = req.session.passport;
     const user = await User.findOne({email: email});
-
-    let deal = await Deal.findById(req.body.id);
+    let deal = await Deal
+      .findOne({user: user._id, _id: req.body.id});
+    
     if (!deal) throw new Error('Deal could not be found');
-
+    
     const attributes = {user: user._id, ...req.body};
-    await Deal.validate(attributes);
-    await Deal.findByIdAndUpdate(attributes.id, attributes);
+    await Deal.validate(attributes);   
 
-    req.flash('success', 'The deal was updated successfully');
-    res.redirect(`/deals/${req.body.id}`);
+    await Deal.updateOne({_id: req.body.id, user: user._id}, {...req.body});
+
+    res.status(200).json(deal);
   } catch (error) {
-    req.flash('danger', `There was an error updating this deal: ${error}`);
-    res.redirect(`/deals/${req.body.id}/edit`);
+    res.status(400).json({message: `There was an error while updating this deal`});
   }
 };
 
 exports.delete = async (req, res) => {
   try {
-    console.log(req.body);
     await Deal.deleteOne({_id: req.body.id});
-    req.flash('success', 'The deal was deleted successfully');
-    res.redirect(`/deals`);
+    res.status(200).json({message: "Deleted!"});
   } catch (error) {
-    req.flash('danger', `There was an error deleting this deal: ${error}`);
-    res.redirect(`/deals`);
+    res.status(400).json({message: "There is an issue while deleting this deal"});
   }
 };

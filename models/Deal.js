@@ -42,7 +42,10 @@ const DealSchema = new mongoose.Schema({
     enum: ['Hot', 'Warm'],
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON:{
+    getters: true
+  }
 });
 
 // Query Helpers
